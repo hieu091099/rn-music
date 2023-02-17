@@ -6,7 +6,7 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import Header, { HeaderDetail } from "./../../components/Header/Header";
 import { LinearGradient } from "expo-linear-gradient";
 import { Dimensions } from "react-native";
@@ -29,17 +29,23 @@ const Player = ({ route }) => {
     pad(Math.floor(position / 60), 2),
     pad(position % 60, 2),
   ];
-  const elapsed = minutesAndSeconds(value);
-  const remaining = minutesAndSeconds(item.time - value);
-  // console.log({ elapsed, remaining });
   const format = (time) => {
     return `${parseInt(time / 60)}:${
       time % 60 === 0 ? "00" : pad(time % 60, 2)
     }`;
   };
-  format(item.time);
+  // const elapsed = minutesAndSeconds(value);
+  // const remaining = minutesAndSeconds(item.time - value);
+  // console.log({ elapsed, remaining });
+
+  const playPauseAudio = async () => {
+    if (pause) {
+      await sound.playAsync();
+    } else {
+      await sound.pauseAsync();
+    }
+  };
   async function playSound() {
-    console.log("Loading Sound");
     const { sound } = await Audio.Sound.createAsync(
       {
         uri: item.url,
@@ -47,11 +53,16 @@ const Player = ({ route }) => {
       { shouldPlay: true }
     );
     setSound(sound);
-    // console.log(JSON.stringify(sound));
-    console.log("Playing Sound");
-    await sound.setPositionAsync(0);
+    setPause(false);
+    sound.addPlayBackListener(async (e) => {
+      console.log(e);
+    });
     await sound.playAsync();
   }
+  React.useEffect(() => {
+    playSound();
+  }, []);
+
   React.useEffect(() => {
     return sound
       ? () => {
@@ -73,7 +84,7 @@ const Player = ({ route }) => {
             borderRadius: 50,
           }}
           onPress={() => {
-            playSound();
+            playPauseAudio();
             setPause(false);
           }}
         >
@@ -90,7 +101,10 @@ const Player = ({ route }) => {
             backgroundColor: "#00be48",
             borderRadius: "50%",
           }}
-          onPress={() => setPause(true)}
+          onPress={() => {
+            playPauseAudio();
+            setPause(true);
+          }}
         >
           <Image
             source={require("../../assets/icon/ic_pause_white_48pt.png")}
@@ -140,7 +154,11 @@ const Player = ({ route }) => {
               value={value}
               minimumValue={0}
               step={1}
-              onValueChange={(sliderValue) => setValue(sliderValue)}
+              onValueChange={async (sliderValue) => {
+                // console.log(sliderValue);
+                await sound.playFromPositionAsync(sliderValue * 1000);
+                setValue(sliderValue);
+              }}
               maximumValue={item.time}
               minimumTrackTintColor="white"
               maximumTrackTintColor="white"
