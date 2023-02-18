@@ -17,21 +17,11 @@ import { Audio } from "expo-av";
 // import Slider from "react-native-slider";
 const windowWidth = Dimensions.get("window").width;
 const windowHeight = Dimensions.get("window").height;
-const Player = ({ route }) => {
-  const { item } = route.params;
+const SeekBar = ({ item }) => {
   const [value, setValue] = useState(0);
   const [pause, setPause] = useState(true);
   const [sound, setSound] = useState();
 
-  const spinValue = new Animated.Value(0);
-  const rotate = spinValue.interpolate({
-    inputRange: [0, 1],
-    outputRange: ["0deg", "360deg"],
-  });
-  const pad = (n, width, z = 0) => {
-    n = n + "";
-    return n.length >= width ? n : new Array(width - n.length + 1).join(z) + n;
-  };
   const minutesAndSeconds = (position) => [
     pad(Math.floor(position / 60), 2),
     pad(position % 60, 2),
@@ -67,18 +57,8 @@ const Player = ({ route }) => {
     setPause(false);
     await sound.playAsync();
   }
-  const spin = () => {
-    spinValue.setValue(0);
-    Animated.timing(spinValue, {
-      toValue: 1,
-      duration: 4000,
-      easing: Easing.linear,
-      useNativeDriver: true,
-    }).start(() => spin());
-  };
 
   useEffect(() => {
-    spin();
     playSound();
   }, []);
 
@@ -137,70 +117,78 @@ const Player = ({ route }) => {
     }
   };
   return (
-    <View style={{ backgroundColor: "#272c2f", width: "100%", height: "100%" }}>
-      <ImageBackground
-        source={image}
-        resizeMode="cover"
+    <View
+      style={{
+        width: windowWidth - 30,
+        position: "absolute",
+        bottom: 50,
+      }}
+    >
+      <Slider
+        value={value}
+        minimumValue={0}
+        step={1}
+        onValueChange={(sliderValue) => {
+          sliderChange(sliderValue);
+        }}
+        maximumValue={item.time * 1000}
+        minimumTrackTintColor="white"
+        maximumTrackTintColor="white"
+        thumbTintColor="white"
+        onSlidingComplete={async (sliderValue) => {
+          await sound.playFromPositionAsync(sliderValue);
+          setValue(sliderValue);
+        }}
+      />
+      <View
         style={{
-          position: "relative",
-          height: windowHeight,
+          flexDirection: "row",
+          justifyContent: "space-between",
+          paddingHorizontal: 15,
         }}
       >
-        <HeaderDetail name={item.nameSong} />
-        <View
-          style={{
-            position: "absolute",
-            top: 0,
-            backgroundColor: "black",
-            width: "100%",
-            height: windowHeight,
-            opacity: 0.3,
-          }}
-        />
-        <LinearGradient
-          colors={["#00000000", "black"]}
-          style={{
-            height: "100%",
-            width: "100%",
-            position: "relative",
-            alignItems: "center",
-          }}
-        >
-          <Animated.View
-            style={{
-              transform: [{ rotate }],
-              width: 250,
-              height: 250,
-              backgroundColor: "black",
-              position: "absolute",
-              bottom: "40%",
-              borderRadius: 300,
-              alignItems: "center",
-              justifyContent: "center",
-              overflow: "hidden",
-            }}
-          >
-            <ImageBackground
-              source={image}
-              resizeMode="cover"
-              style={{ width: "100%", height: "100%", opacity: 0.8 }}
+        <View>
+          <Text style={{ color: "white" }}>
+            {format(parseInt(value / 1000))}
+          </Text>
+        </View>
+        <View>
+          <Text style={{ color: "white" }}>{format(item.time)}</Text>
+        </View>
+      </View>
+      <View
+        style={{
+          flexDirection: "row",
+          justifyContent: "space-between",
+          alignItems: "center",
+          paddingHorizontal: 20,
+          marginTop: 20,
+        }}
+      >
+        <TouchableOpacity>
+          <Image source={require("../../assets/icon/ic_shuffle_white.png")} />
+        </TouchableOpacity>
+        <View style={{ flexDirection: "row", alignItems: "center" }}>
+          <TouchableOpacity>
+            <Image
+              source={require("../../assets/icon/ic_skip_previous_white_36pt.png")}
             />
-            <View
-              style={{
-                position: "absolute",
-                backgroundColor: "black",
-                width: 80,
-                height: 80,
-                borderRadius: 80,
-              }}
+          </TouchableOpacity>
+          {renderPlayButton()}
+          <TouchableOpacity>
+            <Image
+              source={require("../../assets/icon/ic_skip_next_white_36pt.png")}
             />
-          </Animated.View>
-        </LinearGradient>
-      </ImageBackground>
+          </TouchableOpacity>
+        </View>
+        <TouchableOpacity>
+          <Image source={require("../../assets/icon/ic_repeat_white.png")} />
+        </TouchableOpacity>
+      </View>
     </View>
   );
 };
 
-export default Player;
+export default SeekBar;
 
 const styles = StyleSheet.create({});
